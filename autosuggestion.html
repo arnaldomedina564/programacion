@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auto-Suggestion Code Editor</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/dracula.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/show-hint.min.css"
+    />
+    <style>
+      .CodeMirror {
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-900 text-white h-screen">
+    <div id="editor" class="h-full"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/show-hint.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/hint/javascript-hint.min.js"></script>
+
+    <script>
+      // Code templates
+      const codeTemplates = {
+        for: "for (let index = 0; index < array.length; index++) {\n    const element = array[index];\n\n}",
+        foreach: "array.forEach(item => {\n    // Your code here\n});",
+      };
+
+      // Initialize CodeMirror
+      const editor = CodeMirror(document.getElementById("editor"), {
+        mode: "javascript",
+        theme: "dracula",
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        extraKeys: {
+          "Ctrl-Space": "autocomplete",
+        },
+      });
+
+      function getSuggestions(cm, options) {
+        const cursor = cm.getCursor();
+        const token = cm.getTokenAt(cursor);
+        const start = token.start;
+        const end = cursor.ch;
+        const word = token.string;
+
+        const suggestions = [];
+        for (let key in codeTemplates) {
+          if (key.startsWith(word)) {
+            suggestions.push({
+              text: codeTemplates[key],
+              displayText: key,
+            });
+          }
+        }
+
+        return {
+          list: suggestions.length
+            ? suggestions
+            : [{ text: "", displayText: "No suggestions" }],
+          from: CodeMirror.Pos(cursor.line, start),
+          to: CodeMirror.Pos(cursor.line, end),
+        };
+      }
+
+      CodeMirror.registerHelper("hint", "javascript", getSuggestions);
+
+      // Trigger auto-complete on input
+      editor.on("inputRead", function (cm, event) {
+        if (!cm.state.completionActive && event.text[0].match(/[a-zA-Z]/)) {
+          CodeMirror.commands.autocomplete(cm, null, { completeSingle: false });
+        }
+      });
+    </script>
+  </body>
+</html>
